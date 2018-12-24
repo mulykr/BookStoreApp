@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
@@ -15,15 +16,18 @@ namespace BookStoreApp.Controllers
     {
         private ApplicationSignInManager _signInManager;
         private ApplicationUserManager _userManager;
+        private readonly ApplicationDbContext _applicationDbContext;
 
         public ManageController()
         {
+            _applicationDbContext = new ApplicationDbContext();
         }
 
         public ManageController(ApplicationUserManager userManager, ApplicationSignInManager signInManager)
         {
             UserManager = userManager;
             SignInManager = signInManager;
+            _applicationDbContext = new ApplicationDbContext();
         }
 
         public ApplicationSignInManager SignInManager
@@ -64,8 +68,14 @@ namespace BookStoreApp.Controllers
                 : "";
 
             var userId = User.Identity.GetUserId();
+            var user = _applicationDbContext.Users
+                .Include(p => p.MoneyAccount)
+                .Include(p => p.MoneyAccount.DiscountCard)
+                .FirstOrDefault(x => x.Id == userId);
+
             var model = new IndexViewModel
             {
+                ApplicationUser = user,
                 HasPassword = HasPassword(),
                 PhoneNumber = await UserManager.GetPhoneNumberAsync(userId),
                 TwoFactor = await UserManager.GetTwoFactorEnabledAsync(userId),
